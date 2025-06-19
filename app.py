@@ -10,15 +10,21 @@ ANIMAL_NAMES = [
     'Lepre', 'Capriolo', 'Bufalo', 'Cammello', 'Cobra'
 ]
 
+COLORS = [
+    '#EF4444', '#10B981', '#3B82F6', '#F59E0B', '#8B5CF6',
+    '#EC4899', '#F87171', '#34D399', '#FBBF24', '#14B8A6'
+]
+
 players = [f'Player {i}' for i in range(1, 9)]
 teams = []
 current_match = None
 ranking = {}
 
 class Team:
-    def __init__(self, name, players):
+    def __init__(self, name, players, color):
         self.name = name
         self.players = players
+        self.color = color
 
 class Match:
     def __init__(self, team_a, team_b):
@@ -39,8 +45,14 @@ class Match:
 def get_ranking():
     data = []
     for name, games_won in ranking.items():
-        initials = ''.join([w[0] for w in next(t.players for t in teams if t.name == name)])
-        data.append({'name': name, 'games': games_won, 'initials': initials})
+        team_obj = next(t for t in teams if t.name == name)
+        initials = ''.join([w[0] for w in team_obj.players])
+        data.append({
+            'name': name,
+            'games': games_won,
+            'initials': initials,
+            'color': team_obj.color
+        })
     data.sort(key=lambda x: x['games'], reverse=True)
     return data
 
@@ -97,8 +109,10 @@ def shuffle():
     random.shuffle(players)
     teams = []
     names = random.sample(ANIMAL_NAMES, len(players)//2)
+    color_pool = random.sample(COLORS, len(players)//2)
     for i in range(0, len(players), 2):
-        team = Team(names[i//2], [players[i], players[i+1]])
+        color = color_pool[i//2 % len(color_pool)]
+        team = Team(names[i//2], [players[i], players[i+1]], color)
         teams.append(team)
     session['shuffling'] = True
     return redirect(url_for('admin'))
