@@ -45,10 +45,14 @@
 <h3>Current Match: {{ current_match.team_a.name }} vs {{ current_match.team_b.name }}</h3>
 <div id="scoreboard">
   <div class="team-score" style="background: {{ current_match.team_a.color }}">
-    {{ current_match.team_a.name }}: <span id="score_a">{{ current_match.games_a }}</span> games
+    {{ current_match.team_a.name }}:
+    <span id="score_games_a">{{ current_match.games_a }}</span> giochi -
+    <span id="points_a">{{ current_match.display_points('a') }}</span>
   </div>
   <div class="team-score" style="background: {{ current_match.team_b.color }}">
-    {{ current_match.team_b.name }}: <span id="score_b">{{ current_match.games_b }}</span> games
+    {{ current_match.team_b.name }}:
+    <span id="score_games_b">{{ current_match.games_b }}</span> giochi -
+    <span id="points_b">{{ current_match.display_points('b') }}</span>
   </div>
 </div>
 <form method="post" action="/point/team_a">
@@ -57,12 +61,17 @@
 <form method="post" action="/point/team_b">
   <button type="submit">+1 {{ current_match.team_b.name }}</button>
 </form>
+<form method="post" action="/undo">
+  <button type="submit">Undo</button>
+</form>
 <script>
 function updateScore(){
   fetch('/current_match').then(r => r.json()).then(d => {
     if(!d.team_a) return;
-    document.getElementById('score_a').textContent = d.games_a;
-    document.getElementById('score_b').textContent = d.games_b;
+    document.getElementById('score_games_a').textContent = d.games_a;
+    document.getElementById('score_games_b').textContent = d.games_b;
+    document.getElementById('points_a').textContent = d.points_a;
+    document.getElementById('points_b').textContent = d.points_b;
   });
 }
 setInterval(updateScore, 2000);
@@ -71,9 +80,11 @@ setInterval(updateScore, 2000);
 {% if ranking %}
 <h3>Ranking</h3>
 <table>
-  <tr><th>Team</th><th>Games Won</th></tr>
+  <tr><th>Team</th><th>Giocatori</th><th>Giochi Vinti</th></tr>
   {% for r in ranking %}
-  <tr style="background: {{ r.color }}; color: #fff"><td>{{ r.name }} ({{ r.initials }})</td><td>{{ r.games }}</td></tr>
+  <tr style="background: {{ r.color }}; color: #fff">
+    <td>{{ r.name }}</td><td>{{ r.players }}</td><td>{{ r.games }}</td>
+  </tr>
   {% endfor %}
 </table>
 {% endif %}
