@@ -6,7 +6,7 @@
 <h3>Teams</h3>
 <ul id="teams-list">
   {% for t in teams %}
-  <li>{{ t.name }}: {{ t.players[0] }} &amp; {{ t.players[1] }}</li>
+  <li style="background: {{ t.color }}; color: #fff">{{ t.name }}: {{ t.players[0] }} &amp; {{ t.players[1] }}</li>
   {% endfor %}
 </ul>
 {% else %}
@@ -15,10 +15,10 @@
 {% if current_match %}
 <h3>Current Match: {{ current_match.team_a.name }} vs {{ current_match.team_b.name }}</h3>
 <div id="scoreboard">
-  <div>
+  <div class="team-score" style="background: {{ current_match.team_a.color }}">
     {{ current_match.team_a.name }}: <span id="score_a">{{ current_match.games_a }}</span> games
   </div>
-  <div>
+  <div class="team-score" style="background: {{ current_match.team_b.color }}">
     {{ current_match.team_b.name }}: <span id="score_b">{{ current_match.games_b }}</span> games
   </div>
 </div>
@@ -38,7 +38,7 @@ setInterval(updateScore, 2000);
 <table>
   <tr><th>Team</th><th>Games Won</th></tr>
   {% for r in ranking %}
-  <tr><td>{{ r.name }} ({{ r.initials }})</td><td>{{ r.games }}</td></tr>
+  <tr style="background: {{ r.color }}; color: #fff"><td>{{ r.name }} ({{ r.initials }})</td><td>{{ r.games }}</td></tr>
   {% endfor %}
 </table>
 {% endif %}
