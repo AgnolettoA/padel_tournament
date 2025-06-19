@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>User View</h2>
+<p><a href="/logout">Logout</a></p>
+{% if teams %}
+<h3>Teams</h3>
+<ul id="teams-list">
+  {% for t in teams %}
+  <li>{{ t.name }}: {{ t.players[0] }} &amp; {{ t.players[1] }}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>Teams not set up yet.</p>
+{% endif %}
+{% if current_match %}
+<h3>Current Match: {{ current_match.team_a.name }} vs {{ current_match.team_b.name }}</h3>
+<div id="scoreboard">
+  <div>
+    {{ current_match.team_a.name }}: {{ current_match.sets_a }} sets, {{ current_match.games_a }} games, {{ current_match.points_a_display }}
+  </div>
+  <div>
+    {{ current_match.team_b.name }}: {{ current_match.sets_b }} sets, {{ current_match.games_b }} games, {{ current_match.points_b_display }}
+  </div>
+</div>
+{% endif %}
+{% if ranking %}
+<h3>Ranking</h3>
+<table>
+  <tr><th>Team</th><th>Games</th><th>Sets Won</th></tr>
+  {% for r in ranking %}
+  <tr><td>{{ r.name }} ({{ r.initials }})</td><td>{{ r.games }}</td><td>{{ r.sets }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% if shuffling %}
+<script>
+const items = document.querySelectorAll('#teams-list li');
+let count = 0;
+const interval = setInterval(() => {
+  items.forEach(li => li.style.color = '#' + Math.floor(Math.random()*16777215).toString(16));
+  if (++count > 10) clearInterval(interval);
+}, 200);
+</script>
+{% endif %}
+{% endblock %}
