@@ -65,15 +65,7 @@
   <button type="submit">Undo</button>
 </form>
 <script>
-document.querySelectorAll('form.ajax').forEach(f => {
-  f.addEventListener('submit', e => {
-    e.preventDefault();
-    fetch(f.action, { method: 'POST', body: new FormData(f) });
-  });
-});
-const evt = new EventSource('/stream');
-evt.onmessage = e => {
-  const d = JSON.parse(e.data);
+function applyState(d){
   if(d.teams){
     const ul = document.getElementById('teams-list');
     if(ul){
@@ -120,6 +112,18 @@ evt.onmessage = e => {
       });
     }
   }
+}
+document.querySelectorAll('form.ajax').forEach(f => {
+  f.addEventListener('submit', e => {
+    e.preventDefault();
+    fetch(f.action, { method: 'POST', body: new FormData(f) })
+      .then(r => r.json()).then(applyState);
+  });
+});
+const evt = new EventSource('/stream');
+evt.onmessage = e => {
+  const d = JSON.parse(e.data);
+  applyState(d);
 };
 </script>
 {% endif %}

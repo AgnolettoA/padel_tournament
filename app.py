@@ -136,7 +136,7 @@ def stream():
         while True:
             data = json.dumps(get_state())
             yield f'data: {data}\n\n'
-            time.sleep(1)
+            time.sleep(0.25)
     return Response(event_stream(), mimetype='text/event-stream')
 
 
@@ -184,7 +184,7 @@ def add_players():
     players = [p.strip() for p in text.splitlines() if p.strip()]
     teams = []
     ranking = {}
-    return jsonify({'status': 'ok'})
+    return jsonify(get_state())
 
 @app.route('/shuffle', methods=['POST'])
 def shuffle():
@@ -198,7 +198,7 @@ def shuffle():
         team = Team(names[i//2], [players[i], players[i+1]], color)
         teams.append(team)
     session['shuffling'] = True
-    return jsonify({'status': 'ok'})
+    return jsonify(get_state())
 
 @app.route('/start_match', methods=['POST'])
 def start_match():
@@ -208,14 +208,14 @@ def start_match():
     team_a = teams[a_index]
     team_b = teams[b_index]
     current_match = Match(team_a, team_b)
-    return jsonify({'status': 'ok'})
+    return jsonify(get_state())
 
 @app.route('/undo', methods=['POST'])
 def undo():
     global current_match
     if current_match:
         current_match.undo()
-    return jsonify({'status': 'ok'})
+    return jsonify(get_state())
 
 @app.route('/point/<team>', methods=['POST'])
 def point(team):
@@ -223,7 +223,7 @@ def point(team):
     if not current_match:
         return jsonify({'error': 'no match'})
     current_match.add_point('a' if team == 'team_a' else 'b')
-    return jsonify({'status': 'ok'})
+    return jsonify(get_state())
 
 
 @app.route('/current_match')
