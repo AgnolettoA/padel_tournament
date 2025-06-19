@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session, url_for, jsonify
 import random
 
 app = Flask(__name__)
@@ -24,75 +24,26 @@ class Match:
     def __init__(self, team_a, team_b):
         self.team_a = team_a
         self.team_b = team_b
-        self.points_a = 0
-        self.points_b = 0
         self.games_a = 0
         self.games_b = 0
-        self.sets_a = 0
-        self.sets_b = 0
 
-    def point(self, team):
+    def add_game(self, team):
         if team == 'a':
-            self.points_a += 1
+            self.games_a += 1
+            ranking[self.team_a.name] = ranking.get(self.team_a.name, 0) + 1
         else:
-            self.points_b += 1
-        self.update_scores()
-
-    def update_scores(self):
-        pa, pb = self.points_a, self.points_b
-        if pa >= 4 or pb >= 4:
-            if abs(pa - pb) >= 2:
-                if pa > pb:
-                    self.games_a += 1
-                else:
-                    self.games_b += 1
-                self.points_a = 0
-                self.points_b = 0
-                self.check_set()
-
-    def check_set(self):
-        ga, gb = self.games_a, self.games_b
-        if (ga >= 6 or gb >= 6) and abs(ga - gb) >= 2:
-            if ga > gb:
-                self.sets_a += 1
-            else:
-                self.sets_b += 1
-            self.games_a = 0
-            self.games_b = 0
-
-    def point_display(self, points, opponent):
-        score_map = ['0', '15', '30', '40']
-        if points >= 3 and opponent >= 3:
-            if points == opponent:
-                return '40'
-            elif points == opponent + 1:
-                return 'AD'
-            else:
-                return '40'
-        return score_map[min(points, 3)]
-
-    @property
-    def points_a_display(self):
-        return self.point_display(self.points_a, self.points_b)
-
-    @property
-    def points_b_display(self):
-        return self.point_display(self.points_b, self.points_a)
+            self.games_b += 1
+            ranking[self.team_b.name] = ranking.get(self.team_b.name, 0) + 1
 
 
 def get_ranking():
     data = []
-    for name, sets_won in ranking.items():
-        games_played = 0
-        for m in matches:
-            if m['team_a'].name == name or m['team_b'].name == name:
-                games_played += 1
+    for name, games_won in ranking.items():
         initials = ''.join([w[0] for w in next(t.players for t in teams if t.name == name)])
-        data.append({'name': name, 'sets': sets_won, 'games': games_played, 'initials': initials})
-    data.sort(key=lambda x: x['sets'], reverse=True)
+        data.append({'name': name, 'games': games_won, 'initials': initials})
+    data.sort(key=lambda x: x['games'], reverse=True)
     return data
 
-matches = []
 
 @app.route('/')
 def index():
@@ -164,18 +115,23 @@ def start_match():
 
 @app.route('/point/<team>', methods=['POST'])
 def point(team):
-    global current_match, ranking, matches
+    global current_match
     if not current_match:
         return redirect(url_for('admin'))
-    current_match.point('a' if team == 'team_a' else 'b')
-    if current_match.sets_a == 2 or current_match.sets_b == 2:
-        # match over
-        ranking[current_match.team_a.name] = ranking.get(current_match.team_a.name, 0) + current_match.sets_a
-        ranking[current_match.team_b.name] = ranking.get(current_match.team_b.name, 0) + current_match.sets_b
-        matches.append({'team_a': current_match.team_a, 'team_b': current_match.team_b,
-                        'sets_a': current_match.sets_a, 'sets_b': current_match.sets_b})
-        current_match = None
+    current_match.add_game('a' if team == 'team_a' else 'b')
     return redirect(url_for('admin'))
+
+
+@app.route('/current_match')
+def current_match_data():
+    if not current_match:
+        return jsonify({})
+    return jsonify({
+        'team_a': current_match.team_a.name,
+        'team_b': current_match.team_b.name,
+        'games_a': current_match.games_a,
+        'games_b': current_match.games_b,
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -16,19 +16,29 @@
 <h3>Current Match: {{ current_match.team_a.name }} vs {{ current_match.team_b.name }}</h3>
 <div id="scoreboard">
   <div>
-    {{ current_match.team_a.name }}: {{ current_match.sets_a }} sets, {{ current_match.games_a }} games, {{ current_match.points_a_display }}
+    {{ current_match.team_a.name }}: <span id="score_a">{{ current_match.games_a }}</span> games
   </div>
   <div>
-    {{ current_match.team_b.name }}: {{ current_match.sets_b }} sets, {{ current_match.games_b }} games, {{ current_match.points_b_display }}
+    {{ current_match.team_b.name }}: <span id="score_b">{{ current_match.games_b }}</span> games
   </div>
 </div>
+<script>
+function updateScore(){
+  fetch('/current_match').then(r => r.json()).then(d => {
+    if(!d.team_a) return;
+    document.getElementById('score_a').textContent = d.games_a;
+    document.getElementById('score_b').textContent = d.games_b;
+  });
+}
+setInterval(updateScore, 2000);
+</script>
 {% endif %}
 {% if ranking %}
 <h3>Ranking</h3>
 <table>
-  <tr><th>Team</th><th>Games</th><th>Sets Won</th></tr>
+  <tr><th>Team</th><th>Games Won</th></tr>
   {% for r in ranking %}
-  <tr><td>{{ r.name }} ({{ r.initials }})</td><td>{{ r.games }}</td><td>{{ r.sets }}</td></tr>
+  <tr><td>{{ r.name }} ({{ r.initials }})</td><td>{{ r.games }}</td></tr>
   {% endfor %}
 </table>
 {% endif %}
