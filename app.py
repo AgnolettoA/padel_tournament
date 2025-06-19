@@ -108,7 +108,7 @@ def index():
 def login():
     password = request.form.get('password')
     session['admin'] = password == '00000'
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard'), code=303)
 
 @app.route('/logout')
 def logout():
@@ -144,7 +144,7 @@ def add_players():
     players = [p.strip() for p in text.splitlines() if p.strip()]
     teams = []
     ranking = {}
-    return redirect(url_for('admin'))
+    return redirect(url_for('admin'), code=303)
 
 @app.route('/shuffle', methods=['POST'])
 def shuffle():
@@ -158,7 +158,7 @@ def shuffle():
         team = Team(names[i//2], [players[i], players[i+1]], color)
         teams.append(team)
     session['shuffling'] = True
-    return redirect(url_for('admin'))
+    return redirect(url_for('admin'), code=303)
 
 @app.route('/start_match', methods=['POST'])
 def start_match():
@@ -168,22 +168,22 @@ def start_match():
     team_a = teams[a_index]
     team_b = teams[b_index]
     current_match = Match(team_a, team_b)
-    return redirect(url_for('admin'))
+    return redirect(url_for('admin'), code=303)
 
 @app.route('/undo', methods=['POST'])
 def undo():
     global current_match
     if current_match:
         current_match.undo()
-    return redirect(url_for('admin'))
+    return redirect(url_for('admin'), code=303)
 
 @app.route('/point/<team>', methods=['POST'])
 def point(team):
     global current_match
     if not current_match:
-        return redirect(url_for('admin'))
+        return redirect(url_for('admin'), code=303)
     current_match.add_point('a' if team == 'team_a' else 'b')
-    return redirect(url_for('admin'))
+    return redirect(url_for('admin'), code=303)
 
 
 @app.route('/current_match')
