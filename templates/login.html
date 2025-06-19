@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Welcome to Padel Tournament</h2>
+<form method="post" action="/login">
+  <label for="password">Password:</label>
+  <input type="password" name="password" id="password" required>
+  <button type="submit">Login</button>
+</form>
+{% endblock %}
