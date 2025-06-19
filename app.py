@@ -4,10 +4,12 @@ import random
 app = Flask(__name__)
 app.secret_key = 'secret-key'
 
+# "Cool" team names inspired by animals often used for sport clubs
 ANIMAL_NAMES = [
-    'Aquila', 'Falcone', 'Lupo', 'Orso', 'Tigre', 'Leone', 'Volpe', 'Gatto',
-    'Cane', 'Cervo', 'Cinghiale', 'Pantera', 'Gazzella', 'Istrice', 'Riccio',
-    'Lepre', 'Capriolo', 'Bufalo', 'Cammello', 'Cobra'
+    'Aquila Reale', 'Falco', 'Lupo Grigio', 'Orso Bruno', 'Tigre Bianca',
+    'Leone d\'Africa', 'Pantera Nera', 'Volpe Artica', 'Gatto Selvatico',
+    'Squalo', 'Grifone', 'Toro', 'Gabbiano', 'Puma', 'Ghepardo', 'Gorilla',
+    'Rinoceronte', 'Serpente', 'Bufalo', 'Cammello'
 ]
 
 COLORS = [
@@ -32,25 +34,66 @@ class Match:
         self.team_b = team_b
         self.games_a = 0
         self.games_b = 0
+        self.points_a = 0
+        self.points_b = 0
+        # store previous states for undo functionality
+        self.history = []
 
-    def add_game(self, team):
+    def _record_state(self):
+        """Save current score to history for undo."""
+        self.history.append(
+            (self.points_a, self.points_b, self.games_a, self.games_b, ranking.copy())
+        )
+
+    def add_point(self, team):
+        self._record_state()
         if team == 'a':
-            self.games_a += 1
-            ranking[self.team_a.name] = ranking.get(self.team_a.name, 0) + 1
+            self.points_a += 1
         else:
-            self.games_b += 1
-            ranking[self.team_b.name] = ranking.get(self.team_b.name, 0) + 1
+            self.points_b += 1
+        self._check_game()
+
+    def _check_game(self):
+        if self.points_a >= 4 or self.points_b >= 4:
+            if abs(self.points_a - self.points_b) >= 2:
+                winner = 'a' if self.points_a > self.points_b else 'b'
+                if winner == 'a':
+                    self.games_a += 1
+                    ranking[self.team_a.name] = ranking.get(self.team_a.name, 0) + 1
+                else:
+                    self.games_b += 1
+                    ranking[self.team_b.name] = ranking.get(self.team_b.name, 0) + 1
+                self.points_a = 0
+                self.points_b = 0
+
+    def undo(self):
+        if not self.history:
+            return
+        self.points_a, self.points_b, self.games_a, self.games_b, hist_rank = self.history.pop()
+        ranking.clear()
+        ranking.update(hist_rank)
+
+    def display_points(self, team):
+        p = self.points_a if team == 'a' else self.points_b
+        o = self.points_b if team == 'a' else self.points_a
+        mapping = {0: '0', 1: '15', 2: '30', 3: '40'}
+        if p >= 4 or o >= 4:
+            if p == o:
+                return '40'
+            return 'A' if p > o else ''
+        return mapping.get(p, '0')
 
 
 def get_ranking():
     data = []
-    for name, games_won in ranking.items():
-        team_obj = next(t for t in teams if t.name == name)
-        initials = ''.join([w[0] for w in team_obj.players])
+    for team_obj in teams:
+        name = team_obj.name
+        games_won = ranking.get(name, 0)
+        players_names = ' & '.join(team_obj.players)
         data.append({
             'name': name,
             'games': games_won,
-            'initials': initials,
+            'players': players_names,
             'color': team_obj.color
         })
     data.sort(key=lambda x: x['games'], reverse=True)
@@ -127,12 +170,19 @@ def start_match():
     current_match = Match(team_a, team_b)
     return redirect(url_for('admin'))
 
+@app.route('/undo', methods=['POST'])
+def undo():
+    global current_match
+    if current_match:
+        current_match.undo()
+    return redirect(url_for('admin'))
+
 @app.route('/point/<team>', methods=['POST'])
 def point(team):
     global current_match
     if not current_match:
         return redirect(url_for('admin'))
-    current_match.add_game('a' if team == 'team_a' else 'b')
+    current_match.add_point('a' if team == 'team_a' else 'b')
     return redirect(url_for('admin'))
 
 
@@ -145,6 +195,8 @@ def current_match_data():
         'team_b': current_match.team_b.name,
         'games_a': current_match.games_a,
         'games_b': current_match.games_b,
+        'points_a': current_match.display_points('a'),
+        'points_b': current_match.display_points('b'),
     })
 
 if __name__ == '__main__':
