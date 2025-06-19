@@ -64,6 +64,20 @@
 <form method="post" action="/undo" class="ajax">
   <button type="submit">Undo</button>
 </form>
+{% endif %}
+{% if ranking %}
+<h3>Ranking</h3>
+<table id="ranking-table">
+  <tr><th>Team</th><th>Giocatori</th><th>Giochi Vinti</th></tr>
+  <tbody id="ranking-body">
+  {% for r in ranking %}
+  <tr style="background: {{ r.color }}; color: #fff">
+    <td>{{ r.name }}</td><td>{{ r.players }}</td><td>{{ r.games }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 <script>
 function applyState(d){
   if(d.teams){
@@ -94,10 +108,13 @@ function applyState(d){
     }
   }
   if(d.current_match){
-    document.getElementById('score_games_a').textContent = d.current_match.games_a;
-    document.getElementById('score_games_b').textContent = d.current_match.games_b;
-    document.getElementById('points_a').textContent = d.current_match.points_a;
-    document.getElementById('points_b').textContent = d.current_match.points_b;
+    const sgA = document.getElementById('score_games_a');
+    if(sgA){
+      document.getElementById('score_games_a').textContent = d.current_match.games_a;
+      document.getElementById('score_games_b').textContent = d.current_match.games_b;
+      document.getElementById('points_a').textContent = d.current_match.points_a;
+      document.getElementById('points_b').textContent = d.current_match.points_b;
+    }
   }
   if(d.ranking){
     const body = document.getElementById('ranking-body');
@@ -126,20 +143,6 @@ evt.onmessage = e => {
   applyState(d);
 };
 </script>
-{% endif %}
-{% if ranking %}
-<h3>Ranking</h3>
-<table id="ranking-table">
-  <tr><th>Team</th><th>Giocatori</th><th>Giochi Vinti</th></tr>
-  <tbody id="ranking-body">
-  {% for r in ranking %}
-  <tr style="background: {{ r.color }}; color: #fff">
-    <td>{{ r.name }}</td><td>{{ r.players }}</td><td>{{ r.games }}</td>
-  </tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% endif %}
 {% if shuffling %}
 <script>
 const items = document.querySelectorAll('#teams-list li');
