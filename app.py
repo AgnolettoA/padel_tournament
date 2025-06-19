@@ -1,15 +1,17 @@
-from flask import Flask, render_template, request, redirect, session, url_for, jsonify
+from flask import Flask, render_template, request, redirect, session, url_for, jsonify, Response
 import random
+import json
+import time
 
 app = Flask(__name__)
 app.secret_key = 'secret-key'
 
 # "Cool" team names inspired by animals often used for sport clubs
 ANIMAL_NAMES = [
-    'Aquila Reale', 'Falco', 'Lupo Grigio', 'Orso Bruno', 'Tigre Bianca',
-    'Leone d\'Africa', 'Pantera Nera', 'Volpe Artica', 'Gatto Selvatico',
-    'Squalo', 'Grifone', 'Toro', 'Gabbiano', 'Puma', 'Ghepardo', 'Gorilla',
-    'Rinoceronte', 'Serpente', 'Bufalo', 'Cammello'
+    'Aquile Reali', 'Falchi', 'Lupi Grigi', 'Orsi Bruni', 'Tigri Bianche',
+    "Leoni d'Africa", 'Pantere Nere', 'Volpi Artiche', 'Gatti Selvatici',
+    'Squali', 'Grifoni', 'Tori', 'Gabbiani', 'Puma', 'Ghepardi', 'Gorilla',
+    'Rinoceronti', 'Serpenti', 'Bufali', 'Cammelli'
 ]
 
 COLORS = [
@@ -100,6 +102,44 @@ def get_ranking():
     return data
 
 
+def get_state():
+    """Return complete state for streaming."""
+    state = {
+        'teams': [
+            {
+                'name': t.name,
+                'players': t.players,
+                'color': t.color
+            }
+            for t in teams
+        ],
+        'ranking': get_ranking(),
+        'current_match': None
+    }
+    if current_match:
+        state['current_match'] = {
+            'team_a': current_match.team_a.name,
+            'team_b': current_match.team_b.name,
+            'games_a': current_match.games_a,
+            'games_b': current_match.games_b,
+            'points_a': current_match.display_points('a'),
+            'points_b': current_match.display_points('b'),
+            'color_a': current_match.team_a.color,
+            'color_b': current_match.team_b.color
+        }
+    return state
+
+
+@app.route('/stream')
+def stream():
+    def event_stream():
+        while True:
+            data = json.dumps(get_state())
+            yield f'data: {data}\n\n'
+            time.sleep(1)
+    return Response(event_stream(), mimetype='text/event-stream')
+
+
 @app.route('/')
 def index():
     return render_template('login.html')
@@ -144,7 +184,7 @@ def add_players():
     players = [p.strip() for p in text.splitlines() if p.strip()]
     teams = []
     ranking = {}
-    return redirect(url_for('admin'), code=303)
+    return jsonify({'status': 'ok'})
 
 @app.route('/shuffle', methods=['POST'])
 def shuffle():
@@ -158,7 +198,7 @@ def shuffle():
         team = Team(names[i//2], [players[i], players[i+1]], color)
         teams.append(team)
     session['shuffling'] = True
-    return redirect(url_for('admin'), code=303)
+    return jsonify({'status': 'ok'})
 
 @app.route('/start_match', methods=['POST'])
 def start_match():
@@ -168,22 +208,22 @@ def start_match():
     team_a = teams[a_index]
     team_b = teams[b_index]
     current_match = Match(team_a, team_b)
-    return redirect(url_for('admin'), code=303)
+    return jsonify({'status': 'ok'})
 
 @app.route('/undo', methods=['POST'])
 def undo():
     global current_match
     if current_match:
         current_match.undo()
-    return redirect(url_for('admin'), code=303)
+    return jsonify({'status': 'ok'})
 
 @app.route('/point/<team>', methods=['POST'])
 def point(team):
     global current_match
     if not current_match:
-        return redirect(url_for('admin'), code=303)
+        return jsonify({'error': 'no match'})
     current_match.add_point('a' if team == 'team_a' else 'b')
-    return redirect(url_for('admin'), code=303)
+    return jsonify({'status': 'ok'})
 
 
 @app.route('/current_match')
@@ -200,4 +240,4 @@ def current_match_data():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, threaded=True)

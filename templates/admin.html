@@ -3,7 +3,7 @@
 <h2>Admin Dashboard</h2>
 <p><a href="/logout">Logout</a></p>
 <h3>Players</h3>
-<form method="post" action="/add_players">
+<form method="post" action="/add_players" class="ajax">
   <textarea name="players" placeholder="One player per line" rows="8" cols="30"></textarea><br>
   <button type="submit">Add/Replace Players</button>
 </form>
@@ -14,7 +14,7 @@
   <li>{{ p }}</li>
   {% endfor %}
 </ul>
-<form method="post" action="/shuffle">
+<form method="post" action="/shuffle" class="ajax">
   <button type="submit">Shuffle into Teams</button>
 </form>
 {% endif %}
@@ -25,7 +25,7 @@
   <li style="background: {{ t.color }}; color: #fff">{{ t.name }}: {{ t.players[0] }} &amp; {{ t.players[1] }}</li>
   {% endfor %}
 </ul>
-<form method="post" action="/start_match">
+<form method="post" action="/start_match" class="ajax">
   <label>Select Team A:</label>
   <select name="team_a">
     {% for t in teams %}
@@ -55,37 +55,85 @@
     <span id="points_b">{{ current_match.display_points('b') }}</span>
   </div>
 </div>
-<form method="post" action="/point/team_a">
+<form method="post" action="/point/team_a" class="ajax">
   <button type="submit">+1 {{ current_match.team_a.name }}</button>
 </form>
-<form method="post" action="/point/team_b">
+<form method="post" action="/point/team_b" class="ajax">
   <button type="submit">+1 {{ current_match.team_b.name }}</button>
 </form>
-<form method="post" action="/undo">
+<form method="post" action="/undo" class="ajax">
   <button type="submit">Undo</button>
 </form>
 <script>
-function updateScore(){
-  fetch('/current_match').then(r => r.json()).then(d => {
-    if(!d.team_a) return;
-    document.getElementById('score_games_a').textContent = d.games_a;
-    document.getElementById('score_games_b').textContent = d.games_b;
-    document.getElementById('points_a').textContent = d.points_a;
-    document.getElementById('points_b').textContent = d.points_b;
+document.querySelectorAll('form.ajax').forEach(f => {
+  f.addEventListener('submit', e => {
+    e.preventDefault();
+    fetch(f.action, { method: 'POST', body: new FormData(f) });
   });
-}
-setInterval(updateScore, 2000);
+});
+const evt = new EventSource('/stream');
+evt.onmessage = e => {
+  const d = JSON.parse(e.data);
+  if(d.teams){
+    const ul = document.getElementById('teams-list');
+    if(ul){
+      ul.innerHTML = '';
+      d.teams.forEach((t,i) => {
+        const li = document.createElement('li');
+        li.style.background = t.color;
+        li.style.color = '#fff';
+        li.textContent = `${t.name}: ${t.players[0]} \u0026 ${t.players[1]}`;
+        ul.appendChild(li);
+      });
+    }
+    const sA = document.querySelector('select[name="team_a"]');
+    const sB = document.querySelector('select[name="team_b"]');
+    if(sA && sB){
+      sA.innerHTML = '';
+      sB.innerHTML = '';
+      d.teams.forEach((t,i) => {
+        const o1 = document.createElement('option');
+        o1.value = i;
+        o1.textContent = t.name;
+        const o2 = o1.cloneNode(true);
+        sA.appendChild(o1);
+        sB.appendChild(o2);
+      });
+    }
+  }
+  if(d.current_match){
+    document.getElementById('score_games_a').textContent = d.current_match.games_a;
+    document.getElementById('score_games_b').textContent = d.current_match.games_b;
+    document.getElementById('points_a').textContent = d.current_match.points_a;
+    document.getElementById('points_b').textContent = d.current_match.points_b;
+  }
+  if(d.ranking){
+    const body = document.getElementById('ranking-body');
+    if(body){
+      body.innerHTML = '';
+      d.ranking.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.style.background = r.color;
+        tr.style.color = '#fff';
+        tr.innerHTML = `<td>${r.name}</td><td>${r.players}</td><td>${r.games}</td>`;
+        body.appendChild(tr);
+      });
+    }
+  }
+};
 </script>
 {% endif %}
 {% if ranking %}
 <h3>Ranking</h3>
-<table>
+<table id="ranking-table">
   <tr><th>Team</th><th>Giocatori</th><th>Giochi Vinti</th></tr>
+  <tbody id="ranking-body">
   {% for r in ranking %}
   <tr style="background: {{ r.color }}; color: #fff">
     <td>{{ r.name }}</td><td>{{ r.players }}</td><td>{{ r.games }}</td>
   </tr>
   {% endfor %}
+  </tbody>
 </table>
 {% endif %}
 {% if shuffling %}
